@@ -6,11 +6,15 @@ from ip2geotools.databases.noncommercial import DbIpCity
 import ipwhois
 from pprint import pprint
 import shodan as sd
+import requests
+import xss_detector as xss
 
 SHODAN_API_KEY = 'L1Z4GyP8JuAjxQQsw6HjoPJvXaHn18TC'
+XSS_PAYLOAD_PATH = 'payloads.txt'
 
 
-def nmap(ip):
+
+def nmap(ip): # Can update user params for type of scan
 	try:
 		scanner = nm.PortScanner()
 		scanner.scan(hosts=ip, arguments='-F -sV', sudo=False)
@@ -53,8 +57,6 @@ def geoIP(ip):
 					except:
 						return None, None
 
-	
-
 
 def shodan(ip):
 	try:
@@ -72,17 +74,8 @@ class PyNet:
 	def __init__(self, target):
 		self.target = target
 		self.recon = {}
+		self.analysis = {}
 
-
-	'''
-		Call helper functions, scrape outputs for important data
-		return scraped output dicts or whatever. These member functions 
-		will be called by a wrapper titled: reconnaissance that will 
-		run all the scans in order and return a payload of information 
-		that will be added to the object as attributes
-
-	'''
-	#####################################
 
 	def run_nmap(self):
 		results = nmap(self.target)
@@ -123,16 +116,7 @@ class PyNet:
 			pass
 		return self
 
-	
-	#####################################
 
-	'''
-		Call member functions and add outputted data as member variables.
-		Function will be void.
-		Function must be called before ThreatAnalysis is run because that
-		function is dependent on the member variables we add in here.
-
-	'''
 	def reconnaissance(self):
 		print("Running Reconnaissance......")
 		print("Running NMAP Scan\t\t[1/4]")
@@ -158,23 +142,58 @@ class PyNet:
 		pprint(self.recon['open_ports'])
 
 
+	def has_web_server(self):
+		if 80 or 443 in self.recon['open_ports'].keys():
+			return True
+		else:
+			return False
+
+
+	def detect_xss(self, port=80):
+		self.analysis['xss'] = {}
+
+		if not self.has_web_server():
+			self.analysis['xss']['vulnerable'] = None
+			self.analysis['xss']['exploit'] = None
+			self.analysis['xss']['payload'] = None
+			return self
+		if port == 443:
+			url = 'https://' + self.target + ':' + str(port)
+		else:
+			url = 'http://' + self.target + ':' + str(port)
+
+		resp = requests.get(url)
+
+		# This is just a 'double check' the web server is running
+		if resp.status_code == 200: 
+			# Right now this doesn't crawl 
+			found, form_details, payload = xss.scan_xss(url, XSS_PAYLOAD_PATH)
+			self.analysis['xss']['vulnerable'] = found
+			self.analysis['xss']['exploit'] = form_details
+			self.analysis['xss']['payload'] = payload
+		else:
+			self.analysis['xss']['vulnerable'] = None
+			self.analysis['xss']['exploit'] = None
+			self.analysis['xss']['payload'] = None
+		
+		return self
+
+
+
+
 
 def main():
 	#IP = '172.16.88.177' # Metasploitable
 	#IP = '64.233.160.0' # Google Owned
 	#IP = '136.143.153.86' # Webcam
 	#IP = '192.168.2.223' # Me
-	IP = '85.14.229.112' # CSGO Server
+	#IP = '85.14.229.112' # CSGO Server
 	pynet = PyNet(target=IP)
-	pynet.reconnaissance()
-	print()
-	pynet.display_recon_results()
-	
+	#pynet.reconnaissance()
+	pynet.detect_xss()
+	pprint(pynet.analysis)
 
 	
-
-	
-
 
 if __name__ == '__main__':
 	main()
