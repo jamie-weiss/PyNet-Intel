@@ -162,21 +162,30 @@ class PyNet:
 		else:
 			url = 'http://' + self.target + ':' + str(port)
 
-		resp = requests.get(url)
+		try:
+			resp = requests.get(url)
 
-		# This is just a 'double check' the web server is running
-		if resp.status_code == 200: 
-			# Right now this doesn't crawl 
-			found, form_details, payload = xss.scan_xss(url, XSS_PAYLOAD_PATH)
-			self.analysis['xss']['vulnerable'] = found
-			self.analysis['xss']['exploit'] = form_details
-			self.analysis['xss']['payload'] = payload
-		else:
+			# This is just a 'double check' the web server is running
+			if resp.status_code == 200: 
+				# Right now this doesn't crawl 
+				found, form_details, payload = xss.scan_xss(url, XSS_PAYLOAD_PATH)
+				self.analysis['xss']['vulnerable'] = found
+				self.analysis['xss']['exploit'] = form_details
+				self.analysis['xss']['payload'] = payload
+				return self
+			else:
+				self.analysis['xss']['vulnerable'] = None
+				self.analysis['xss']['exploit'] = None
+				self.analysis['xss']['payload'] = None
+				return self
+			
+			return self
+		except:
+			pass
 			self.analysis['xss']['vulnerable'] = None
 			self.analysis['xss']['exploit'] = None
 			self.analysis['xss']['payload'] = None
-		
-		return self
+			return self
 
 
 
@@ -188,10 +197,11 @@ def main():
 	#IP = '136.143.153.86' # Webcam
 	#IP = '192.168.2.223' # Me
 	#IP = '85.14.229.112' # CSGO Server
-	pynet = PyNet(target=IP)
+	#pynet = PyNet(target=IP)
 	#pynet.reconnaissance()
-	pynet.detect_xss()
-	pprint(pynet.analysis)
+	#pynet.detect_xss()
+	#pprint(pynet.analysis)
+
 
 	
 
