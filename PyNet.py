@@ -7,10 +7,16 @@ import ipwhois
 from pprint import pprint
 import shodan as sd
 import requests
+
 import xss_detector as xss
+import ssh_penetrator as ssh
+import ftp_penetrator as ftp
+import http_vulnerability_detector as hvd
+
 
 SHODAN_API_KEY = 'L1Z4GyP8JuAjxQQsw6HjoPJvXaHn18TC'
-XSS_PAYLOAD_PATH = 'payloads.txt'
+XSS_PAYLOAD_PATH = 'payloads_small.txt'
+CREDENTIALS_PATH = 'credentials_small.txt'
 
 
 
@@ -119,18 +125,19 @@ class PyNet:
 
 	def reconnaissance(self):
 		print("Running Reconnaissance......")
-		print("Running NMAP Scan\t\t[1/4]")
 		self.run_nmap()
-		print("Running Blacklist Scan\t\t[2/4]")
+		print("NMAP Scan\t\t\t[1/4]")
 		self.run_blacklist()
-		print("Running GeoLocation Scan\t[3/4]")
+		print("Blacklist Scan\t\t\t[2/4]")
 		self.run_geoIP()
-		print("Running Shodan Scan\t\t[4/4]")
+		print("GeoLocation Scan\t\t[3/4]")
 		self.run_shodan()
+		print("Shodan Scan\t\t\t[4/4]")
 		return self
 
 
 	def display_recon_results(self):
+		print()
 		print("------------ Reconnaissance Network Scan Results ------------")
 		print("Target: ", self.target)
 		print("Running: ", self.recon['running'])
@@ -140,6 +147,44 @@ class PyNet:
 		print("HTTP Components: ", self.recon['http_components'])
 		print("--------------- OPEN PORT INFO ---------------")
 		pprint(self.recon['open_ports'])
+
+
+	def display_analysis_results(self):
+		print()
+		print("------------ Analysis Results ------------")
+
+		print("Has Web Server: ", self.analysis['xss']['web_server'])
+
+		if self.analysis['xss']['web_server'] or self.analysis['xst']['web_server']:
+			print("--> XSS Vulnerable: ", self.analysis['xss']['vulnerable'])
+			if self.analysis['xss']['vulnerable']:
+				print("----> XSS Exploit: ", self.analysis['xss']['exploit'])
+				print("----> XSS Payload: ", self.analysis['xss']['payload'])
+
+			print("--> XST Vulnerable: ", self.analysis['xst']['vulnerable'])
+			print("--> MIME Sniffing Vulnerable: ", self.analysis['mime_sniffing']['vulnerable'])
+			print("----> Content Type Options: ", self.analysis['mime_sniffing']['options'])
+			print("--> Man in the Middle Vulnerable: ", self.analysis['man_in_the_middle']['vulnerable'])
+
+			print("HTTP Methods Responses:")
+			for method in self.analysis['http_methods'].keys():
+				print("--> " + method + ": " + str(self.analysis['http_methods'][method]['status_code']) + ", " + self.analysis['http_methods'][method]['reason'])
+		
+		print("Has SSH Server: ", self.analysis['ssh']['ssh_server'])
+		if self.analysis['ssh']['ssh_server']:
+			print("--> Cracked: ", self.analysis['ssh']['cracked'])
+			print("--> Sec Level: ", self.analysis['ssh']['sec_level'])
+			if self.analysis['ssh']['cracked']:
+				print("----> Username: ", self.analysis['ssh']['username'])
+				print("----> Password: ", self.analysis['ssh']['password'])
+		
+		print("Has FTP Server: ", self.analysis['ftp']['ftp_server'])
+		if self.analysis['ftp']['ftp_server']:
+			print("--> Cracked: ", self.analysis['ftp']['cracked'])
+			if self.analysis['ftp']['cracked']:
+				print("----> Username: ", self.analysis['ftp']['username'])
+				print("----> Password: ", self.analysis['ftp']['password'])
+		
 
 
 	def has_web_server(self):
@@ -153,6 +198,7 @@ class PyNet:
 		self.analysis['xss'] = {}
 
 		if not self.has_web_server():
+			self.analysis['xss']['web_server'] = False
 			self.analysis['xss']['vulnerable'] = None
 			self.analysis['xss']['exploit'] = None
 			self.analysis['xss']['payload'] = None
@@ -169,11 +215,13 @@ class PyNet:
 			if resp.status_code == 200: 
 				# Right now this doesn't crawl 
 				found, form_details, payload = xss.scan_xss(url, XSS_PAYLOAD_PATH)
+				self.analysis['xss']['web_server'] = True
 				self.analysis['xss']['vulnerable'] = found
 				self.analysis['xss']['exploit'] = form_details
 				self.analysis['xss']['payload'] = payload
 				return self
 			else:
+				self.analysis['xss']['web_server'] = False
 				self.analysis['xss']['vulnerable'] = None
 				self.analysis['xss']['exploit'] = None
 				self.analysis['xss']['payload'] = None
@@ -182,25 +230,187 @@ class PyNet:
 			return self
 		except:
 			pass
+			self.analysis['xss']['web_server'] = False
 			self.analysis['xss']['vulnerable'] = None
 			self.analysis['xss']['exploit'] = None
 			self.analysis['xss']['payload'] = None
 			return self
 
 
+	def has_ssh_server(self):
+		if 22 in self.recon['open_ports'].keys():
+			return True
+		else:
+			return False
+
+
+	def detect_ssh(self):
+		self.analysis['ssh'] = {}
+		try:
+			if self.has_ssh_server():
+				cracked, sec_level, username, password = ssh.scan_ssh(self.target, CREDENTIALS_PATH)
+				self.analysis['ssh']['ssh_server'] = True
+				self.analysis['ssh']['cracked'] = cracked
+				self.analysis['ssh']['sec_level'] = sec_level
+				self.analysis['ssh']['username'] = username
+				self.analysis['ssh']['password'] = password
+			else:
+				self.analysis['ssh']['ssh_server'] = False
+				self.analysis['ssh']['cracked'] = None
+				self.analysis['ssh']['sec_level'] = None
+				self.analysis['ssh']['username'] = None
+				self.analysis['ssh']['password'] = None
+			return self
+		except:
+			pass
+			self.analysis['ssh']['ssh_server'] = False
+			self.analysis['ssh']['cracked'] = None
+			self.analysis['ssh']['sec_level'] = None
+			self.analysis['ssh']['username'] = None
+			self.analysis['ssh']['password'] = None
+			return self
+
+
+	def has_ftp_server(self):
+		if 21 in self.recon['open_ports'].keys():
+			return True
+		else:
+			return False
+
+
+	def detect_ftp(self):
+		self.analysis['ftp'] = {}
+		try:
+			if self.has_ftp_server():
+				cracked, username, password = ftp.scan_ftp(self.target, CREDENTIALS_PATH)
+				self.analysis['ftp']['ftp_server'] = True
+				self.analysis['ftp']['cracked'] = cracked
+				self.analysis['ftp']['username'] = username
+				self.analysis['ftp']['password'] = password
+			else:
+				self.analysis['ftp']['ftp_server'] = False
+				self.analysis['ftp']['cracked'] = None
+				self.analysis['ftp']['username'] = None
+				self.analysis['ftp']['password'] = None
+			return self
+		except:
+			pass
+			self.analysis['ftp']['ftp_server'] = False
+			self.analysis['ftp']['cracked'] = None
+			self.analysis['ftp']['username'] = None
+			self.analysis['ftp']['password'] = None
+			return self
+
+
+	def detect_xst(self):
+		self.analysis['xst'] = {}
+		if not self.has_web_server():
+			self.analysis['xst']['web_server'] = False
+			self.analysis['xst']['vulnerable'] = None
+			return self
+		else:
+			url = 'http://' + self.target + ':80'
+			try:
+				vuln = hvd.scan_xst(url)
+				self.analysis['xst']['vulnerable'] = vuln
+				self.analysis['xst']['web_server'] = True
+				return self
+			except:
+				pass
+				self.analysis['xst']['vulnerable'] = None
+				self.analysis['xst']['web_server'] = False
+				return self
+
+
+	def scan_http_responses(self):
+		if not self.has_web_server():
+			self.analysis['http_methods'] = {
+					  'GET': {'status_code': None, 'reason': None},
+					  'POST': {'status_code': None, 'reason': None},
+					  'PUT': {'status_code': None, 'reason': None},
+					  'DELETE': {'status_code': None, 'reason': None},
+					  'OPTIONS': {'status_code': None, 'reason': None},
+					  'TRACE': {'status_code': None, 'reason': None},
+					  'TEST': {'status_code': None, 'reason': None}
+				   }
+			return self
+		else:
+			url = 'http://' + self.target + ':80'
+			try:
+				results_dict = hvd.test_method_responses(url)
+				self.analysis['http_methods'] = results_dict
+				return self
+			except:
+				pass
+				self.analysis['http_methods'] = {
+					  'GET': {'status_code': None, 'reason': None},
+					  'POST': {'status_code': None, 'reason': None},
+					  'PUT': {'status_code': None, 'reason': None},
+					  'DELETE': {'status_code': None, 'reason': None},
+					  'OPTIONS': {'status_code': None, 'reason': None},
+					  'TRACE': {'status_code': None, 'reason': None},
+					  'TEST': {'status_code': None, 'reason': None}
+				   }
+				return self
+
+
+	def detect_MIME_sniffing(self):
+		self.analysis['mime_sniffing'] = {}
+		if not self.has_web_server():
+			self.analysis['mime_sniffing']['vulnerable'] = None
+			return self
+		else:
+			url = 'http://' + self.target + ':80'
+			result, content_type_options = hvd.scan_content_type_options(url)
+			self.analysis['mime_sniffing']['vulnerable'] = result
+			self.analysis['mime_sniffing']['options'] = content_type_options
+			return self
+
+
+	def detect_man_in_the_middle(self):
+		self.analysis['man_in_the_middle'] = {}
+		if not self.has_web_server():
+			self.analysis['man_in_the_middle']['vulnerable'] = None
+			return self
+		else:
+			url = 'http://' + self.target + ':80'
+			result = hvd.scan_MITM(url)
+			self.analysis['man_in_the_middle']['vulnerable'] = result
+			return self
+
+
+	def vulnerability_analysis(self):
+		print()
+		print("Running Vulnerability Analysis......")
+		self.detect_xss()
+		print("XSS Analysis\t\t\t[1/5]")
+		self.detect_xst()
+		print("XST Analysis\t\t\t[2/5]")
+		self.detect_MIME_sniffing()
+		print("MIME Sniffing Analysis\t\t[3/7]")
+		self.detect_man_in_the_middle()
+		print("Man in the Middle Analysis\t[4/7]")
+		self.scan_http_responses()
+		print("HTTP Methods Analysis\t\t[5/7]")
+		self.detect_ssh()
+		print("SSH Penetration Analysis\t[6/7]")
+		self.detect_ftp()
+		print("FTP Penetration Analysis\t[7/7]")
+		return self
+
 
 
 
 def main():
-	#IP = '172.16.88.177' # Metasploitable
-	#IP = '64.233.160.0' # Google Owned
-	#IP = '136.143.153.86' # Webcam
-	#IP = '192.168.2.223' # Me
-	#IP = '85.14.229.112' # CSGO Server
-	#pynet = PyNet(target=IP)
-	#pynet.reconnaissance()
-	#pynet.detect_xss()
-	#pprint(pynet.analysis)
+	#IP = '172.16.88.177' # Metasploitable (SSH Vulnerable)
+	IP = '136.143.153.86' # Webcam (Shodan Info, Lots of Ports)
+	pynet = PyNet(target=IP)
+	pynet.reconnaissance()
+	pynet.vulnerability_analysis()
+
+	pynet.display_recon_results()
+	pynet.display_analysis_results()
+
 
 
 	
