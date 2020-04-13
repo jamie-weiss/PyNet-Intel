@@ -7,14 +7,18 @@ import ipwhois
 from pprint import pprint
 import shodan as sd
 import requests
+import vulners
+import time
 
 import xss_detector as xss
 import ssh_penetrator as ssh
 import ftp_penetrator as ftp
 import http_vulnerability_detector as hvd
+import vulners_search as V
 
 
 SHODAN_API_KEY = 'L1Z4GyP8JuAjxQQsw6HjoPJvXaHn18TC'
+VULNERS_API_KEY = 'X5FSV2X2I4W9R2XK5SBO1FH0U6Z5KB45D92W62S9GNXJJSLB6654NDMN7JIOV5FW'
 XSS_PAYLOAD_PATH = 'payloads_small.txt'
 CREDENTIALS_PATH = 'credentials_small.txt'
 
@@ -146,7 +150,20 @@ class PyNet:
 		print("ISP: ", self.recon['isp'])
 		print("HTTP Components: ", self.recon['http_components'])
 		print("--------------- OPEN PORT INFO ---------------")
-		pprint(self.recon['open_ports'])
+		for port in self.recon['open_ports'].keys():
+			print("Port Number: ", port)
+			if self.recon['open_ports'][port]['state'] != '':
+				print("--> State: ", self.recon['open_ports'][port]['state'])
+			if self.recon['open_ports'][port]['name'] != '':
+				print("--> Name: ", self.recon['open_ports'][port]['name'])
+			if self.recon['open_ports'][port]['version'] != '':
+				print("--> Version: ", self.recon['open_ports'][port]['version'])
+			if self.recon['open_ports'][port]['product'] != '':
+				print("--> Product: ", self.recon['open_ports'][port]['product'])
+			if self.recon['open_ports'][port]['reason'] != '':
+				print("--> Reason: ", self.recon['open_ports'][port]['reason'])
+			print()
+		print()
 
 
 	def display_analysis_results(self):
@@ -184,7 +201,21 @@ class PyNet:
 			if self.analysis['ftp']['cracked']:
 				print("----> Username: ", self.analysis['ftp']['username'])
 				print("----> Password: ", self.analysis['ftp']['password'])
-		
+
+		print("------------ RELATED CVE INFORMATION ------------")
+		for key in self.analysis['CVE_vulnerabilities']:
+			print("Port Number: ", key)
+			if self.analysis['CVE_vulnerabilities'][key] == []:
+				print("None")
+			else:
+				for vuln in self.analysis['CVE_vulnerabilities'][key]:
+					print("CVE ID: ", vuln['id'])
+					print("Date Created: ", vuln['created'])
+					print("Last Modified: ", vuln['modified'])
+					print("CVSS Threat Score: ", vuln['score'])
+					print("Link: ", vuln['link'])
+					print()
+				print()
 
 
 	def has_web_server(self):
@@ -239,7 +270,10 @@ class PyNet:
 
 	def has_ssh_server(self):
 		if 22 in self.recon['open_ports'].keys():
-			return True
+			if self.recon['open_ports'][22]['name'] == 'ssh':
+				return True
+			else:
+				return False
 		else:
 			return False
 
@@ -273,7 +307,10 @@ class PyNet:
 
 	def has_ftp_server(self):
 		if 21 in self.recon['open_ports'].keys():
-			return True
+			if self.recon['open_ports'][21]['name'] == 'ftp':
+				return True
+			else:
+				return False
 		else:
 			return False
 
@@ -379,37 +416,67 @@ class PyNet:
 			return self
 
 
+	def vulners_scan(self):
+		results = V.scan_vulners_api(self.recon['open_ports'], VULNERS_API_KEY)
+		self.analysis['CVE_vulnerabilities'] = {}
+		for key in results.keys():
+			if results[key] == []:
+				self.analysis['CVE_vulnerabilities'][key] = []
+			else:
+				modified_list = []
+				for vuln in results[key]:
+					modified_vuln = {
+						'id': vuln['id'],
+						'score': vuln['cvss']['score'],
+						'link': vuln['href'],
+						'created': vuln['published'],
+						'modified': vuln['modified'],
+						'description': vuln['description']
+					}
+					modified_list.append(modified_vuln)
+				self.analysis['CVE_vulnerabilities'][key] = modified_list
+
+		return self
+
+
 	def vulnerability_analysis(self):
 		print()
 		print("Running Vulnerability Analysis......")
 		self.detect_xss()
-		print("XSS Analysis\t\t\t[1/5]")
+		print("XSS Analysis\t\t\t[1/8]")
 		self.detect_xst()
-		print("XST Analysis\t\t\t[2/5]")
+		print("XST Analysis\t\t\t[2/8]")
 		self.detect_MIME_sniffing()
-		print("MIME Sniffing Analysis\t\t[3/7]")
+		print("MIME Sniffing Analysis\t\t[3/8]")
 		self.detect_man_in_the_middle()
-		print("Man in the Middle Analysis\t[4/7]")
+		print("Man in the Middle Analysis\t[4/8]")
 		self.scan_http_responses()
-		print("HTTP Methods Analysis\t\t[5/7]")
+		print("HTTP Methods Analysis\t\t[5/8]")
 		self.detect_ssh()
-		print("SSH Penetration Analysis\t[6/7]")
+		print("SSH Penetration Analysis\t[6/8]")
 		self.detect_ftp()
-		print("FTP Penetration Analysis\t[7/7]")
+		print("FTP Penetration Analysis\t[7/8]")
+		self.vulners_scan()
+		print("Related CVE Analysis\t\t[8/8]")
 		return self
 
 
 
 
 def main():
+	start = time.time()
 	#IP = '172.16.88.177' # Metasploitable (SSH Vulnerable)
 	IP = '136.143.153.86' # Webcam (Shodan Info, Lots of Ports)
 	pynet = PyNet(target=IP)
 	pynet.reconnaissance()
 	pynet.vulnerability_analysis()
-
 	pynet.display_recon_results()
 	pynet.display_analysis_results()
+	end = time.time()
+	print()
+	print()
+	elapsed = end - start
+	print("Elapsed Time: ", elapsed)
 
 
 
