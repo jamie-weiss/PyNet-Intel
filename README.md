@@ -1,2 +1,4 @@
 # PyNet-Intel
-A network intelligence tool.
+A network intelligence tool by Jamie Weiss
+
+

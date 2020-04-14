@@ -9,22 +9,24 @@ import shodan as sd
 import requests
 import vulners
 import time
+import json
+import sys
 
-import xss_detector as xss
-import ssh_penetrator as ssh
-import ftp_penetrator as ftp
-import http_vulnerability_detector as hvd
-import vulners_search as V
+import scans.xss_detector as xss
+import scans.ssh_penetrator as ssh
+import scans.ftp_penetrator as ftp
+import scans.http_vulnerability_detector as hvd
+import scans.vulners_search as V
 
 
 SHODAN_API_KEY = 'L1Z4GyP8JuAjxQQsw6HjoPJvXaHn18TC'
 VULNERS_API_KEY = 'X5FSV2X2I4W9R2XK5SBO1FH0U6Z5KB45D92W62S9GNXJJSLB6654NDMN7JIOV5FW'
-XSS_PAYLOAD_PATH = 'payloads_small.txt'
-CREDENTIALS_PATH = 'credentials_small.txt'
+XSS_PAYLOAD_PATH = 'data/payloads_small.txt'
+CREDENTIALS_PATH = 'data/credentials_small.txt'
 
 
 
-def nmap(ip): # Can update user params for type of scan
+def nmap(ip):
 	try:
 		scanner = nm.PortScanner()
 		scanner.scan(hosts=ip, arguments='-F -sV', sudo=False)
@@ -118,12 +120,6 @@ class PyNet:
 		except:
 			self.recon['isp'] = None
 			pass
-		try:
-			http_dict = response['data'][1]['http']
-			self.recon['http_components'] = http_dict['components'].keys()
-		except:
-			self.recon['http_components'] = None
-			pass
 		return self
 
 
@@ -148,7 +144,6 @@ class PyNet:
 		print("Blacklisted: ", self.recon['blacklisted'])
 		print("Location: [" + str(self.recon['location']['latitude']) + ", " + str(self.recon['location']['longitude']) + "]")
 		print("ISP: ", self.recon['isp'])
-		print("HTTP Components: ", self.recon['http_components'])
 		print("--------------- OPEN PORT INFO ---------------")
 		for port in self.recon['open_ports'].keys():
 			print("Port Number: ", port)
@@ -242,9 +237,7 @@ class PyNet:
 		try:
 			resp = requests.get(url)
 
-			# This is just a 'double check' the web server is running
 			if resp.status_code == 200: 
-				# Right now this doesn't crawl 
 				found, form_details, payload = xss.scan_xss(url, XSS_PAYLOAD_PATH)
 				self.analysis['xss']['web_server'] = True
 				self.analysis['xss']['vulnerable'] = found
@@ -443,44 +436,80 @@ class PyNet:
 		print()
 		print("Running Vulnerability Analysis......")
 		self.detect_xss()
-		print("XSS Analysis\t\t\t[1/8]")
+		print("XSS Analysis\t\t\t[1/9]")
 		self.detect_xst()
-		print("XST Analysis\t\t\t[2/8]")
+		print("XST Analysis\t\t\t[2/9]")
 		self.detect_MIME_sniffing()
-		print("MIME Sniffing Analysis\t\t[3/8]")
+		print("MIME Sniffing Analysis\t\t[3/9]")
 		self.detect_man_in_the_middle()
-		print("Man in the Middle Analysis\t[4/8]")
+		print("Man in the Middle Analysis\t[4/9]")
 		self.scan_http_responses()
-		print("HTTP Methods Analysis\t\t[5/8]")
+		print("HTTP Methods Analysis\t\t[5/9]")
 		self.detect_ssh()
-		print("SSH Penetration Analysis\t[6/8]")
+		print("SSH Penetration Analysis\t[6/9]")
 		self.detect_ftp()
-		print("FTP Penetration Analysis\t[7/8]")
+		print("FTP Penetration Analysis\t[7/9]")
 		self.vulners_scan()
-		print("Related CVE Analysis\t\t[8/8]")
+		print("Related CVE Analysis\t\t[8/9]")
+		self.calc_threat_scores()
+		print("Calculating Threat Scores\t[9/9]")
+		return self
+
+
+	def calc_threat_scores(self):
+		total_threat_score = 0
+		total_open_ports_with_threat = 0
+		for key in self.analysis['CVE_vulnerabilities'].keys():
+			total_open_ports_with_threat += 1
+			if self.analysis['CVE_vulnerabilities'][key] == []:
+				continue
+			else:
+				for threat in self.analysis['CVE_vulnerabilities'][key]:
+					total_threat_score += threat['score']
+		scaled_threat_score = float(total_threat_score) / float(total_open_ports_with_threat)
+		self.threat_scores = {"total": total_threat_score, "scaled": scaled_threat_score}
 		return self
 
 
 
+	def build_dict(self):
+		dictionary = {'target': self.target, 'threat_scores': self.threat_scores, 'recon': self.recon, 'analysis': self.analysis}
+		return dictionary
 
-def main():
-	start = time.time()
-	#IP = '172.16.88.177' # Metasploitable (SSH Vulnerable)
-	IP = '136.143.153.86' # Webcam (Shodan Info, Lots of Ports)
-	pynet = PyNet(target=IP)
+
+	def save_json(self, outfile_path):
+		dictionary = {'target': self.target, 'threat_scores': self.threat_scores, 'recon': self.recon, 'analysis': self.analysis}
+		with open(outfile_path, 'w') as outfile:
+			json.dump(dictionary, outfile)
+
+
+def run(ip):
+	pynet = PyNet(target=ip)
 	pynet.reconnaissance()
 	pynet.vulnerability_analysis()
-	pynet.display_recon_results()
-	pynet.display_analysis_results()
-	end = time.time()
-	print()
-	print()
-	elapsed = end - start
-	print("Elapsed Time: ", elapsed)
+	payload = pynet.build_dict()
+	return payload
+
+
+# def main():
+# 	# start = time.time()
+# 	# ip_addr = sys.argv[1]
+# 	# outfile_name = sys.argv[2]
+# 	# outfile_location = 'json/'+outfile_name
+# 	# #IP = '172.16.88.177' # Metasploitable (SSH Vulnerable)
+# 	# #IP = '136.143.153.86' # Webcam (Shodan Info, Lots of Ports)
+# 	# pynet = PyNet(target=ip_addr)
+# 	# pynet.reconnaissance()
+# 	# pynet.vulnerability_analysis()
+# 	# pynet.save_json(outfile_path=outfile_location)
+# 	# end = time.time()
+# 	# print()
+# 	# elapsed = end - start
+# 	# print("Elapsed Time: ", elapsed)
 
 
 
 	
 
-if __name__ == '__main__':
-	main()
+# if __name__ == '__main__':
+# 	main()
