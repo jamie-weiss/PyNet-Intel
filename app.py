@@ -88,7 +88,7 @@ def run_port_analysis(data, port_number):
 	payload['CVEs'] = data['analysis']['CVE_vulnerabilities'][port_number]
 	return payload
 
-st.markdown('# PyNet Intel')
+st.markdown('# PyNet Intel: Scan Results')
 st.markdown("---")
 ip_address = st.sidebar.text_input(label='',value='Enter a IP Address')
 if st.sidebar.button('Run Scan'):
@@ -141,41 +141,179 @@ if st.sidebar.button('Run Scan'):
 		data = pynet.build_dict()
 		my_bar.progress(100)
 
-		st.markdown("## Scan Results")
-
-		st.markdown("**Web Server Running: **" + str(data['analysis']['xss']['web_server']))
 		if data['analysis']['xss']['web_server']:
-			st.markdown("**Cross-Site Scripting Vulnerable: **" + str(data['analysis']['xss']['vulnerable']))
-			if data['analysis']['xss']['vulnerable']:
-				st.markdown("**XSS Exploit: **`" + data['analysis']['xss']['exploit'] + "`")
-				st.markdown("**XSS Payload: **`" + data['analysis']['xss']['payload'] + "`")
-			st.markdown("**Cross-Site Tracing Vulnerable: **" + str(data['analysis']['xst']['vulnerable']))
-			st.markdown("**MIME Sniffing Vulnerable: **" + str(data['analysis']['mime_sniffing']['vulnerable']))
-			st.markdown("**Content Type Options: **`" + str(data['analysis']['mime_sniffing']['options']) + "`")
-			st.markdown("**Man in the Middle Vulnerable: **" + str(data['analysis']['man_in_the_middle']['vulnerable']))
-			
+		 	if data['analysis']['xss']['vulnerable']:
+		 		st.markdown(f'''
 
-			st.markdown("**HTTP Methods Responses:**")
-			methods_dict = {}
-			for method in data['analysis']['http_methods'].keys():
-				methods_dict[method] = [data['analysis']['http_methods'][method]['status_code'], data['analysis']['http_methods'][method]['reason']]
-			methods_df = pd.DataFrame(methods_dict, index=['Code', 'Reason'])
-			st.table(methods_df)
+				<div class="card bg-light mb-3">
+					<div class="card-body">
+						<h4 class="card-title">Cross-Site Scripting: <text class="text-danger">Vulnerable</text></h4>
+						<h5 class="card-text">Exploit: <pre>{data['analysis']['xss']['exploit']}</pre></h5>
+						<h5 class="card-text">Payload: <pre>{data['analysis']['xss']['payload']}</pre></h5>
+					</div>
+				</div>
 
-		st.markdown("**SSH Server Running: **" + str(data['analysis']['ssh']['ssh_server']))
+					''', unsafe_allow_html=True)
+		 	else:
+		 		st.markdown(f'''
+
+				<div class="card bg-light mb-3">
+					<div class="card-body">
+						<h4 class="card-title">Cross-Site Scripting: <text class="text-success">No Vulnerability Detected</text></h5>
+					</div>
+				</div>
+
+					''', unsafe_allow_html=True)
+
+		 	if data['analysis']['xst']['vulnerable']:
+		 		st.markdown(f'''
+
+				<div class="card bg-light mb-3">
+					<div class="card-body">
+						<h4 class="card-title">Cross-Site Tracing: <text class="text-danger">Vulnerable</text></h4>
+						<h5 class="card-test">Responses - GET: {data['analysis']['http_methods']['GET']['status_code']} | POST: {data['analysis']['http_methods']['POST']['status_code']} | PUT: {data['analysis']['http_methods']['PUT']['status_code']} | DELETE: {data['analysis']['http_methods']['DELETE']['status_code']} | OPTIONS: {data['analysis']['http_methods']['OPTIONS']['status_code']} | TRACE: {data['analysis']['http_methods']['TRACE']['status_code']} | TEST: {data['analysis']['http_methods']['TEST']['status_code']}</h5>
+					</div>
+				</div>
+
+					''', unsafe_allow_html=True)
+		 	else:
+		 		st.markdown(f'''
+
+				<div class="card bg-light mb-3">
+					<div class="card-body">
+						<h4 class="card-title">Cross-Site Tracing: <text class="text-success">No Vulnerability Detected</text></h5>
+					</div>
+				</div>
+
+					''', unsafe_allow_html=True)
+
+		 	if data['analysis']['mime_sniffing']['vulnerable']:
+		 		st.markdown(f'''
+
+				<div class="card bg-light mb-3">
+					<div class="card-body">
+						<h4 class="card-title">Mime Sniffing: <text class="text-danger">Vulnerable</text></h4>
+						<h5 class="card-test">Content Type Options: {str(data['analysis']['mime_sniffing']['options'])}</h5>
+					</div>
+				</div>
+
+					''', unsafe_allow_html=True)
+		 	else:
+		 		st.markdown(f'''
+
+				<div class="card bg-light mb-3">
+					<div class="card-body">
+						<h4 class="card-title">Mime Sniffing: <text class="text-success">No Vulnerability Detected</text></h4>
+					</div>
+				</div>
+
+					''', unsafe_allow_html=True)
+
+		 	if data['analysis']['man_in_the_middle']['vulnerable']:
+		 		st.markdown(f'''
+
+				<div class="card bg-light mb-3">
+					<div class="card-body">
+						<h4 class="card-title">Man-in-the-Middle Attack: <text class="text-danger">Vulnerable</text></h4>
+					</div>
+				</div>
+
+					''', unsafe_allow_html=True)
+		 	else:
+		 		st.markdown(f'''
+
+				<div class="card bg-light mb-3">
+					<div class="card-body">
+						<h4 class="card-title">Man-in-the-Middle Attack: <text class="text-success">No Vulnerability Detected</text></h4>
+					</div>
+				</div>
+
+					''', unsafe_allow_html=True)
+		else:
+			st.markdown(f'''
+
+			<div class="card bg-light mb-3">
+				<div class="card-body">
+					<h4 class="card-title">Web Server Not Running: <text class="text-success">No Web Vulnerabilities Detected</text></h4>
+				</div>
+			</div>
+
+				''', unsafe_allow_html=True)
+
+
+
 		if data['analysis']['ssh']['ssh_server']:
-			st.markdown("**SSH Credentials Cracked: **" + str(data['analysis']['ssh']['cracked']))
-			st.markdown("**SSH Security Level: **" + str(data['analysis']['ssh']['sec_level']))
 			if data['analysis']['ssh']['cracked']:
-				st.markdown("**Username: **`" + str(data['analysis']['ssh']['username'])+"`")
-				st.markdown("**Password: **`" + str(data['analysis']['ssh']['password'])+"`")
+				st.markdown(f'''
 
-		st.markdown("**FTP Server Running: **" + str(data['analysis']['ftp']['ftp_server']))
+				<div class="card bg-light mb-3">
+					<div class="card-body">
+						<h4 class="card-title">SSH Credentials: <text class="text-danger">Cracked</text></h4>
+						<h5 class="card-test">Username: {str(data['analysis']['ssh']['username'])}</h5>
+						<h5 class="card-test">Password: {str(data['analysis']['ssh']['password'])}</h5>
+					</div>
+				</div>
+
+					''', unsafe_allow_html=True)
+			elif data['analysis']['ssh']['sec_level'] == 1:
+				st.markdown(f'''
+
+				<div class="card bg-light mb-3">
+					<div class="card-body">
+						<h4 class="card-title">SSH Credentials: <text class="text-warning">Possible to Crack</text></h4>
+						<h5 class="card-test">Credentials not found in small default wordlist. No server timeout or bot detection.</h5>
+					</div>
+				</div>
+
+					''', unsafe_allow_html=True)
+			else:
+				st.markdown(f'''
+
+				<div class="card bg-light mb-3">
+					<div class="card-body">
+						<h4 class="card-title">SSH Credentials: <text class="text-success">Unable to Crack</text></h4>
+						<h5 class="card-test">Secure credentials with retry limit and/or bot detection.</h5>
+					</div>
+				</div>
+
+					''', unsafe_allow_html=True)
+
+		else:
+			st.markdown(f'''
+
+			<div class="card bg-light mb-3">
+				<div class="card-body">
+					<h4 class="card-title">SSH Not Running: <text class="text-success">No SSH Vulnerabilities Detected</text></h5>
+				</div>
+			</div>
+
+				''', unsafe_allow_html=True)
+
+
 		if data['analysis']['ftp']['ftp_server']:
-			st.markdown("**FTP Credentials Cracked: **" + str(data['analysis']['ftp']['cracked']))
 			if data['analysis']['ftp']['cracked']:
-				st.markdown("**Username: **`" + str(data['analysis']['ftp']['username'])+"`")
-				st.markdown("**Password: **`" + str(data['analysis']['ftp']['password'])+"`")
+				st.markdown(f'''
+
+				<div class="card bg-light mb-3">
+					<div class="card-body">
+						<h4 class="card-title">FTP Credentials: <text class="text-danger">Cracked</text></h4>
+						<h5 class="card-test">Username: {str(data['analysis']['ftp']['username'])}</h5>
+						<h5 class="card-test">Password: {str(data['analysis']['ftp']['password'])}</h5>
+					</div>
+				</div>
+
+					''', unsafe_allow_html=True)
+
+		else:
+			st.markdown(f'''
+
+			<div class="card bg-light mb-3">
+				<div class="card-body">
+					<h4 class="card-title">FTP Not Running: <text class="text-success">No FTP Vulnerabilities Detected</text></h5>
+				</div>
+			</div>
+
+				''', unsafe_allow_html=True)
 
 		location = [data['recon']['location']['longitude'], data['recon']['location']['latitude']]
 		df = create_location_df(data)
@@ -205,8 +343,8 @@ if st.sidebar.button('Run Scan'):
 					showframe=False,
 					showland = True,
 					landcolor = "rgb(212, 212, 212)",
-					subunitcolor = "rgba(0,0,0,0)",
-					countrycolor = "rgba(0,0,0,0)",
+	        		subunitcolor = "rgb(243,244,247)",
+	        		countrycolor = "rgb(243,244,247)",
 					showlakes = True,
 					lakecolor = "rgba(0,0,0,0)",
 					showsubunits = True,
@@ -234,22 +372,61 @@ if st.sidebar.button('Run Scan'):
 
 		st.sidebar.plotly_chart(fig, use_container_width=True)
 
-		open_ports = number_of_open_ports(data)
+		open_ports = str(number_of_open_ports(data))
 		if open_ports is not None:
-			st.sidebar.markdown('**Number of Open Ports: **' + str(open_ports))
+			st.sidebar.markdown(f'''
+
+			<div class="card text-white bg-secondary mb-3" style="width:18rem">
+				<div class="card-body">
+					<h5 class="card-title">Number of Open Ports</h5>
+					<p class="card-text">{open_ports}</p>
+				</div>
+			</div>
+
+
+				''', unsafe_allow_html=True)
 
 		threat_total, threat_scaled = get_threat_scores(data)
 		if threat_total or threat_scaled is not None:
-			st.sidebar.markdown('**Total Threat Score: **' + str(threat_total))
-			st.sidebar.markdown('**Scaled Threat Score: **' + str(threat_scaled))
+			st.sidebar.markdown(f'''
+
+			<div class="card text-white bg-secondary mb-3" style="width:18rem">
+				<div class="card-body">
+					<h5 class="card-title">Vulnerability Scores</h5>
+					<p class="card-text">Total: {str(threat_total)} | Scaled: {str(threat_scaled)}</p>
+				</div>
+			</div>
+
+
+				''', unsafe_allow_html=True)
 
 		blacklisted = get_blacklisted(data)
 		if blacklisted is not None:
-			st.sidebar.markdown('**Blacklisted IP: **' + str(blacklisted))
+			st.sidebar.markdown(f'''
+
+			<div class="card text-white bg-secondary mb-3" style="width:18rem">
+				<div class="card-body">
+					<h5 class="card-title">Blacklisted IP</h5>
+					<p class="card-text">{str(blacklisted)}</p>
+				</div>
+			</div>
+
+
+				''', unsafe_allow_html=True)
 
 		isp = get_isp(data)
 		if isp is not None:
-			st.sidebar.markdown('**ISP: **' + str(isp))
+			st.sidebar.markdown(f'''
+
+			<div class="card text-white bg-secondary mb-3" style="width:18rem">
+				<div class="card-body">
+					<h5 class="card-title">Internet Service Provider</h5>
+					<p class="card-text">{str(isp)}</p>
+				</div>
+			</div>
+
+
+				''', unsafe_allow_html=True)
 
 		st.markdown("---")
 		st.markdown("### Vulnerability by Port")
