@@ -8,6 +8,7 @@ import plotly.graph_objects as go
 from pprint import pprint
 import socket
 import PyNet
+import plotly.express as px
 
 
 
@@ -75,6 +76,63 @@ def port_table_df(data):
 			dct['CVSS Score'].append(vuln['score'])
 			dct['Link'].append(vuln['link'])
 	return pd.DataFrame(dct)
+
+
+def create_CVE_pure_list(data):
+	cve_list = []
+	for port_number in data['recon']['open_ports'].keys():
+		for vuln in data['analysis']['CVE_vulnerabilities'][port_number]:
+			if 'CVE' not in vuln['id']:
+				continue
+			else:
+				temp = {}
+				temp['Port'] = port_number
+				temp['CVE ID'] = (vuln['id'])
+				temp['Last Modified'] = (vuln['modified'])
+				temp['CVSS Score'] = (vuln['score'])
+				temp['Link'] = (vuln['link'])
+				temp['Desc'] = vuln['description'][:100]
+				temp['Date Created'] = vuln['created']
+				cve_list.append(temp)
+
+	return cve_list
+
+
+def get_top_two_port_numbers(port_threat_df):
+	max_score = 0
+	second_score = 0
+	max_port = 0
+	second_port = 0
+	for score, port in zip(port_threat_df['threat_score'], port_threat_df['port_number']):
+		if score > max_score:
+			second_score = max_score
+			max_score = score
+			second_port = max_port
+			max_port = port
+		elif score > second_score and score < max_score:
+			second_score = score
+			second_port = port
+
+	return max_port, second_port
+
+
+
+def generate_df_for_port(data, port_number):
+	dct = {'Port': [], 'Service': [], 'CVE ID': [], 'Last Modified': [], 'CVSS Score': []}
+	for vuln in data['analysis']['CVE_vulnerabilities'][port_number]:
+		dct['Port'].append(port_number)
+		dct['Service'].append(data['recon']['open_ports'][port_number]['name'] + ' ' + data['recon']['open_ports'][port_number]['version'])
+		dct['CVE ID'].append(vuln['id'])
+		dct['Last Modified'].append(vuln['modified'])
+		dct['CVSS Score'].append(vuln['score'])
+	return dct
+
+
+def generate_hovertext(dct):
+	hovertext = []
+	for i in range(len(dct['Port'])):
+		hovertext.append(str(dct['CVE ID'][i]) + '\nService: ' + str(dct['Service'][i]) + '\nLast Modified: ' + str(dct['Last Modified'][i]) + '\nCVSS: ' + str(dct['CVSS Score'][i]))
+	return hovertext
 
 
 @st.cache
@@ -437,10 +495,8 @@ if st.sidebar.button('Run Scan'):
 			y=threat_df['threat_score'],
 			mode='markers',
 			marker=dict(
-				size=16,
-				color=threat_df['num_threats'],
-				colorscale='Inferno',
-				showscale=True,
+				size=10,
+				color='green'
 				),
 		)
 
@@ -464,9 +520,107 @@ if st.sidebar.button('Run Scan'):
 		st.plotly_chart(fig, use_container_width=True)
 
 		port_df = port_table_df(data)
-		st.dataframe(port_df)
 
-	except (socket.error, TypeError):
+		vuln_list = create_CVE_pure_list(data)
+
+		most_pn, second_most_pn = get_top_two_port_numbers(threat_df)
+		most_dict = generate_df_for_port(data, most_pn)
+		second_most_dict = generate_df_for_port(data, second_most_pn)
+		hovertext_most = generate_hovertext(most_dict)
+		hovertext_second = generate_hovertext(second_most_dict)
+
+		st.markdown("### Most Vulnerable Port: " + str(most_pn))
+
+		test_df = pd.DataFrame(most_dict)
+		figure = px.scatter(
+			test_df,
+			x='Last Modified',
+			y='CVSS Score',
+			hover_data=['CVE ID', 'Last Modified', 'Service', 'CVSS Score'],
+		)
+
+		figure.update_traces(marker=dict(size=10))
+		st.plotly_chart(figure, use_container_width=True)
+
+
+		st.markdown("### Second Most Vulnerable Port: " + str(second_most_pn))
+
+		test_df2 = pd.DataFrame(second_most_dict)
+		figure2 = px.scatter(
+			test_df2,
+			x='Last Modified',
+			y='CVSS Score',
+			hover_data=['CVE ID', 'Last Modified', 'Service', 'CVSS Score'],
+		)
+		figure2.update_traces(marker=dict(size=10, color='red'))
+
+		st.plotly_chart(figure2, use_container_width=True)
+		
+
+
+		# if len(vuln_list) % 2 == 1:
+		# 	vuln_list.pop()
+		# l = 0
+		# st.markdown(f'''<div class="overflow-auto"> ''', unsafe_allow_html=True)
+		# while l < len(vuln_list) - 1:
+		# 	left_vuln = vuln_list[l]
+		# 	l += 1
+			
+		# 	right_vuln = vuln_list[l]
+		# 	l+= 1
+			
+		# 	st.markdown(f'''
+
+
+		# 	<div class="row">
+		# 		<div class="col-sm-6">
+		# 			<div class="card">
+		# 				<div class="card-body">
+		# 					<h4 class="card-title">
+		# 						Port: {left_vuln['Port']} | CVE ID: {left_vuln['CVE ID']}
+		# 					</h4>
+		# 					<h4 class="card-text">
+		# 						<small><b>CVSS Score: </b> {left_vuln['CVSS Score']}</small>
+		# 						<br></br>
+		# 						<small><b>Date Published:</b> {left_vuln['Date Created']}</small>
+		# 						<br></br>
+		# 						<small><b>Last Modified:</b> {left_vuln['Last Modified']}</small>
+		# 						<br></br>
+		# 						<small><b>Description:</b> {left_vuln['Desc']}</small>
+		# 					</h4>
+		# 					<a href="{left_vuln['Link']}" class="btn btn-light">Link</a>	
+		# 				</div>
+		# 			</div>
+		# 		</div>
+		# 		<div class="col-sm-6">
+		# 			<div class="card">
+		# 				<div class="card-body">
+		# 					<h4 class="card-title">
+		# 						Port: {right_vuln['Port']} | CVE ID: {right_vuln['CVE ID']}
+		# 					</h4>
+		# 					<h4 class="card-text">
+		# 						<small><b>CVSS Score: </b> {right_vuln['CVSS Score']}</small>
+		# 						<br></br>
+		# 						<small><b>Date Published:</b> {right_vuln['Date Created']}</small>
+		# 						<br></br>
+		# 						<small><b>Last Modified:</b> {right_vuln['Last Modified']}</small>
+		# 						<br></br>
+		# 						<small><b>Description:</b> {right_vuln['Desc']}</small>
+		# 					</h4>
+		# 					<a href="{right_vuln['Link']}" class="btn btn-light">Link</a>	
+		# 				</div>
+		# 			</div>
+		# 		</div>
+
+		# 	</div>
+		# 	<br></br>
+
+
+
+		# 	''', unsafe_allow_html=True)
+
+
+	except (socket.error):
 		st.error("Invalid IP Address")
 
 
