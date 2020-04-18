@@ -20,10 +20,10 @@ Here is a list of some ideas I had for the future.  If anybody has other ideas f
 
 Here is some information you can use to get in touch with me.  This is highly recommended:
 
-Email: Jamie_Weiss@outlook.com (Best way!)
-LinkedIn: [Jamie Weiss](https://www.linkedin.com/in/jamie-weiss-4a79ab154/)
-Twitter: [@cd_jamieweiss](https://twitter.com/cd_jamieweiss) (I don't use this much)
-Medium: [Jamie Weiss](https://medium.com/@jamie_weiss) (Read my articles!)
+* Email: <Jamie_Weiss@outlook.com> (Best way!)
+* LinkedIn: [Jamie Weiss](https://www.linkedin.com/in/jamie-weiss-4a79ab154/)
+* Twitter: [@cd_jamieweiss](https://twitter.com/cd_jamieweiss) (I don't use this much)
+* Medium: [Jamie Weiss](https://medium.com/@jamie_weiss) (Read my articles!)
 
 
 

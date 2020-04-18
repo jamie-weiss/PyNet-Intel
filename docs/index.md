@@ -1,12 +1,35 @@
 # PyNet Intelligence - Overview
-*This is Pynet's Application documentation, for API information click here*
+*This is Pynet's Application documentation, API documentation coming soon*
 
 ## Contents
 
-* [User Guide](user_guide.md) - How to use PyNet Intelligence and interpret output.
-* [Pipeline](pipeline.md) - Behind the scences of PyNet Intelligence on a more technical level.
-* [Policy and Disclaimer](policy.md) - An important description of the policy surrounding PyNet Intelligence and a disclaimer for its use.
-
+* [User Guide](user_guide.md)
+	* [Prerequisites](user_guide.md#prerequisites)
+	* [Getting Started](user_guide.md#getting-started)
+	* [Using PyNet Intelligence](user_guide.md#using-pynet-intelligence)
+	* [The Sidebar](user_guide.md#the-sidebar)
+	* [Web Vulnerabilities](user_guide.md#web-vulnerabilities)
+	* [SSH and FTP Vulnerabilities](user_guide.md#ssh-and-ftp-vulnerabilities)
+	* [Vulnerability Graphs](user_guide.md#vulnerability-graphs)
+* [Pipeline](pipeline.md)
+	* [User Input](pipeline.md#user-input)
+	* [NMAP Scan](pipeline.md#nmap-scan)
+	* [Blacklist IP Check](pipeline.md#blacklist-ip-check)
+	* [Geolocation Scan](pipeline.md#geolocation-scan)
+	* [Shodan Scan](pipeline.md#shodan-scan)
+	* [Database Storage](pipeline.md#database-storage)
+	* [Web Vulnerability Detection](pipeline.md#web-vulnerability-detection)
+	* [SSH and FTP Security](pipeline.md#ssh-and-ftp-security)
+	* [Related CVE Mappings](pipeline.md#related-cve-mappings)
+	* [Database Appendage](pipeline.md#database-appendage)
+	* [Visualization](pipeline.md#visualization)
+* [Policy and Disclaimer](policy.md)
+	* [Disclaimer](policy.md#disclaimer)
+	* [Policy](policy.md#policy)
+	* [Another Note](policy.md#another-note)
+* [About the Author](about_the_author.md)
+	* [Future Updates](about_the_author.md#future-updates)
+	* [Contact Me](about_the_author.md#contact-me)
 
 ## Introduction
 

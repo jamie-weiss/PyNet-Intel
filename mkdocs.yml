@@ -7,5 +7,3 @@ nav:
     - Pipeline: pipeline.md
     - Policy and Disclaimer: policy.md
     - About the Author: about_the_author.md
-markdown_extensions:
-    - codehilite

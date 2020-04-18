@@ -1,4 +1,5 @@
 # PyNet Intelligence - User Guide
+*Here is a comprehensive guide to get started using PyNet Intel.*
 
 ### Prerequisites
 
@@ -103,7 +104,7 @@ There are 2 more scans run if the SSH service and FTP service are running in the
 
 ![SSH and FTP Screenshots](imgs/ssh_ftp.png)
 
-In this example the SSH credentials were cracked.  The cracked username and passwords are printed below. The FTP port on the other hand was not running.  If the SSH port was not cracked, there would be another piece of information revealed: a security level.  The higher the security level, the more secure the port is.  For more information about these scans and the meaning of security level, read [this](pipeline.md#ssh/ftp-security)
+In this example the SSH credentials were cracked.  The cracked username and passwords are printed below. The FTP port on the other hand was not running.  If the SSH port was not cracked, there would be another piece of information revealed: a security level.  The higher the security level, the more secure the port is.  For more information about these scans and the meaning of security level, read [this](pipeline.md#ssh-and-ftp-security)
 
 ### Vulnerability Graphs
 

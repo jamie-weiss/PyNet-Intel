@@ -52,7 +52,7 @@ At this moment, the search will not [crawl](https://www.sovrn.com/blog/website-c
 
 **Man in the Middle Attacks:** The last web-based vulnerability that PyNet will check for is the possibility of a [Man in the Middle attack](https://www.imperva.com/learn/application-security/man-in-the-middle-attack-mitm/). Man in the Middle Attakcs (MitM) occur when an actor is able to eavesdrop user's input over a server by listening to the packets being sent over the server.  While this type of attack is quite dense to disect, a quick way to check for a vulnerability is to check the transport security policy set by the web page. The policy can be found using the `requests` python library.  The line `req.headers['Strict-Transport-Security']` will throw an exception if it is not found, thus rendering the server vulnerable.
 
-### SSH/FTP Security
+### SSH and FTP Security
 
 The next vulnerability that is analyzed is the FTP and SSH server vulnerabilities. First, it needs to be confirmed that these services are indeed running on our target IP address.  If this check returns true, PyNet will proceed to run a dictionary attack in an attempt to crack the username and password for the system.  Much like the Cross-Site Scripting vulnerability check found in the [Web Vulnerability section](#web-vulnerability-detection), the default wordlist is not large.  The wordlist *is* however, stored with commonly used default credenttials which are run against the SSH and FTP ports. This attack uses the `paramiko` library, `socket` library, and `ftplib` library to run. It runs the block for SSH:
 ```
