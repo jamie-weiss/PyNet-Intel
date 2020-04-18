@@ -11,3 +11,7 @@ Another possible use case of PyNet is for *learning* about penetration testing. 
 ### Policy
 
 The specific law that makes running PyNet on an unauthorized server is Computer Misuse Act of 1990.  This policy states that makes unauthorized use of computer systems a crime.  This law is so specific that even making a GET request to a website is illegal if the owner doesn't want you to.  With that being said, mostly every website want's users to make GET requests because that means that users are indeed visiting their site.
+
+### Another Note
+
+Many of the scans run by PyNet Intelligence will return either Vulnerable or Not Vulnerable.  While this may seem trivial, it is not.  It is hard to completely tell if a system is vulnerable or not to a specific attack in a short period of time. As a result we like to heir on the side of caution and call a server vulnerable if we found a small vulnerability regarding a certain scan.  If a test returns Vulnerable, there is definitley something insecure about the thing we tested, but we are never 100% sure the vulnerability can be exploited.

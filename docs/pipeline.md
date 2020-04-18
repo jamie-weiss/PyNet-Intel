@@ -55,14 +55,14 @@ At this moment, the search will not [crawl](https://www.sovrn.com/blog/website-c
 ### SSH/FTP Security
 
 The next vulnerability that is analyzed is the FTP and SSH server vulnerabilities. First, it needs to be confirmed that these services are indeed running on our target IP address.  If this check returns true, PyNet will proceed to run a dictionary attack in an attempt to crack the username and password for the system.  Much like the Cross-Site Scripting vulnerability check found in the [Web Vulnerability section](#web-vulnerability-detection), the default wordlist is not large.  The wordlist *is* however, stored with commonly used default credenttials which are run against the SSH and FTP ports. This attack uses the `paramiko` library, `socket` library, and `ftplib` library to run. It runs the block for SSH:
-```python
+```
 client = paramiko.SSHClient()
 client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 client.connect(hostname=hostname, username=username, password=password, timeout=3)
 ```
 
 It runs the block for FTP:
-```python
+```
 server = ftplib.FTP()
 server.connect(hostname, 21, timeout=5)
 server.login(username, password)

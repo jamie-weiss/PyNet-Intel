@@ -146,7 +146,7 @@ def run_port_analysis(data, port_number):
 	payload['CVEs'] = data['analysis']['CVE_vulnerabilities'][port_number]
 	return payload
 
-st.markdown('# PyNet Intel: Scan Results')
+st.markdown('# PyNet Intelligence')
 st.markdown("---")
 ip_address = st.sidebar.text_input(label='',value='Enter a IP Address')
 if st.sidebar.button('Run Scan'):
@@ -524,101 +524,40 @@ if st.sidebar.button('Run Scan'):
 		vuln_list = create_CVE_pure_list(data)
 
 		most_pn, second_most_pn = get_top_two_port_numbers(threat_df)
-		most_dict = generate_df_for_port(data, most_pn)
-		second_most_dict = generate_df_for_port(data, second_most_pn)
-		hovertext_most = generate_hovertext(most_dict)
-		hovertext_second = generate_hovertext(second_most_dict)
+		if most_pn != 0:
+			most_dict = generate_df_for_port(data, most_pn)
+			hovertext_most = generate_hovertext(most_dict)
 
-		st.markdown("### Most Vulnerable Port: " + str(most_pn))
+			st.markdown("### Most Vulnerable Port: " + str(most_pn))
 
-		test_df = pd.DataFrame(most_dict)
-		figure = px.scatter(
-			test_df,
-			x='Last Modified',
-			y='CVSS Score',
-			hover_data=['CVE ID', 'Last Modified', 'Service', 'CVSS Score'],
-		)
+			test_df = pd.DataFrame(most_dict)
+			figure = px.scatter(
+				test_df,
+				x='Last Modified',
+				y='CVSS Score',
+				hover_data=['CVE ID', 'Last Modified', 'Service', 'CVSS Score'],
+			)
 
-		figure.update_traces(marker=dict(size=10))
-		st.plotly_chart(figure, use_container_width=True)
+			figure.update_traces(marker=dict(size=10))
+			st.plotly_chart(figure, use_container_width=True)
 
+		if second_most_pn != 0:
+			second_most_dict = generate_df_for_port(data, second_most_pn)
+			hovertext_second = generate_hovertext(second_most_dict)
 
-		st.markdown("### Second Most Vulnerable Port: " + str(second_most_pn))
+			st.markdown("### Second Most Vulnerable Port: " + str(second_most_pn))
 
-		test_df2 = pd.DataFrame(second_most_dict)
-		figure2 = px.scatter(
-			test_df2,
-			x='Last Modified',
-			y='CVSS Score',
-			hover_data=['CVE ID', 'Last Modified', 'Service', 'CVSS Score'],
-		)
-		figure2.update_traces(marker=dict(size=10, color='red'))
+			test_df2 = pd.DataFrame(second_most_dict)
+			figure2 = px.scatter(
+				test_df2,
+				x='Last Modified',
+				y='CVSS Score',
+				hover_data=['CVE ID', 'Last Modified', 'Service', 'CVSS Score'],
+			)
+			figure2.update_traces(marker=dict(size=10, color='red'))
 
-		st.plotly_chart(figure2, use_container_width=True)
+			st.plotly_chart(figure2, use_container_width=True)
 		
-
-
-		# if len(vuln_list) % 2 == 1:
-		# 	vuln_list.pop()
-		# l = 0
-		# st.markdown(f'''<div class="overflow-auto"> ''', unsafe_allow_html=True)
-		# while l < len(vuln_list) - 1:
-		# 	left_vuln = vuln_list[l]
-		# 	l += 1
-			
-		# 	right_vuln = vuln_list[l]
-		# 	l+= 1
-			
-		# 	st.markdown(f'''
-
-
-		# 	<div class="row">
-		# 		<div class="col-sm-6">
-		# 			<div class="card">
-		# 				<div class="card-body">
-		# 					<h4 class="card-title">
-		# 						Port: {left_vuln['Port']} | CVE ID: {left_vuln['CVE ID']}
-		# 					</h4>
-		# 					<h4 class="card-text">
-		# 						<small><b>CVSS Score: </b> {left_vuln['CVSS Score']}</small>
-		# 						<br></br>
-		# 						<small><b>Date Published:</b> {left_vuln['Date Created']}</small>
-		# 						<br></br>
-		# 						<small><b>Last Modified:</b> {left_vuln['Last Modified']}</small>
-		# 						<br></br>
-		# 						<small><b>Description:</b> {left_vuln['Desc']}</small>
-		# 					</h4>
-		# 					<a href="{left_vuln['Link']}" class="btn btn-light">Link</a>	
-		# 				</div>
-		# 			</div>
-		# 		</div>
-		# 		<div class="col-sm-6">
-		# 			<div class="card">
-		# 				<div class="card-body">
-		# 					<h4 class="card-title">
-		# 						Port: {right_vuln['Port']} | CVE ID: {right_vuln['CVE ID']}
-		# 					</h4>
-		# 					<h4 class="card-text">
-		# 						<small><b>CVSS Score: </b> {right_vuln['CVSS Score']}</small>
-		# 						<br></br>
-		# 						<small><b>Date Published:</b> {right_vuln['Date Created']}</small>
-		# 						<br></br>
-		# 						<small><b>Last Modified:</b> {right_vuln['Last Modified']}</small>
-		# 						<br></br>
-		# 						<small><b>Description:</b> {right_vuln['Desc']}</small>
-		# 					</h4>
-		# 					<a href="{right_vuln['Link']}" class="btn btn-light">Link</a>	
-		# 				</div>
-		# 			</div>
-		# 		</div>
-
-		# 	</div>
-		# 	<br></br>
-
-
-
-		# 	''', unsafe_allow_html=True)
-
 
 	except (socket.error):
 		st.error("Invalid IP Address")
